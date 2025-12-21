@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Weathfly Dashboard</title>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ================= TOP BAR ================= -->
+<header class="topbar">
+  <h2>Weathfly</h2>
+  <div class="search">
+    <input id="searchInput" placeholder="Search city..." />
+    <button id="searchBtn">Search</button>
+  </div>
+</header>
+
+<!-- ================= APP WRAPPER ================= -->
+<div class="app">
+
+  <!-- ================= DASHBOARD ================= -->
+  <div class="dashboard">
+
+    <!-- LEFT PANEL -->
+    <div class="panel left">
+      <h1 id="cityName">Delhi</h1>
+
+      <div class="big-temp">
+        <span id="temp">12</span>°
+      </div>
+
+      <p class="desc" id="desc">Fog</p>
+
+      <div class="stats">
+        <div class="stat"><span>Max</span><b id="maxTemp">12°</b></div>
+        <div class="stat"><span>Min</span><b id="minTemp">12°</b></div>
+        <div class="stat"><span>Humidity</span><b id="humidity">94%</b></div>
+        <div class="stat"><span>Wind</span><b id="wind">7 km/h</b></div>
+      </div>
+    </div>
+
+    <!-- CENTER PANEL -->
+    <div class="panel center">
+
+      <h3>Hourly Temperature</h3>
+
+      <div class="graph-meta">
+        <span id="minGraph">Min: --°</span>
+        <span id="maxGraph">Max: --°</span>
+      </div>
+
+      <div class="graph">
+        <svg viewBox="0 0 700 300">
+          <g id="yLabels"></g>
+          <g id="grid"></g>
+          <path id="graphPath"></path>
+          <g id="graphDots"></g>
+        </svg>
+
+        <div id="tooltip" class="tooltip hidden">
+          <strong id="tooltipTemp"></strong>
+          <small id="tooltipTime"></small>
+        </div>
+      </div>
+
+      <!-- TIMELINE (CORRECT PLACE) -->
+      <div class="timeline">
+        <input
+          type="range"
+          id="timeSlider"
+          min="0"
+          max="7"
+          value="0"
+        />
+        <div class="timeline-label">
+          <span id="sliderTime">--:--</span>
+          <span id="sliderTemp">--°</span>
+        </div>
+      </div>
+
+      <h3>Location</h3>
+      <div id="map" class="map"></div>
+
+      <h3>Next Hours</h3>
+      <div class="forecast" id="forecastRow"></div>
+
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="panel right">
+
+      <div class="section">
+        <h3>Air Quality (PM2.5)</h3>
+        <div class="aqi">
+          <span id="aqiScore">--</span>
+          <p id="aqiLabel">--</p>
+          <small>PM2.5: <b id="pm25">--</b> µg/m³</small>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Extra</h3>
+        <div class="extra">
+          <div><span>Pressure</span><b id="pressure">1017 hPa</b></div>
+          <div><span>Feels Like</span><b id="feels">12°</b></div>
+          <div><span>Visibility</span><b id="visibility">0.4 km</b></div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ================= WORLD CITIES ================= -->
+  <section class="world-section">
+    <h2>Key Cities of the World</h2>
+    <div class="world-grid" id="worldGrid"></div>
+  </section>
+
+</div>
+
+<!-- JS -->
+<script src="script.js"></script>
+</body>
+</html>
