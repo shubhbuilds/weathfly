@@ -411,4 +411,7 @@ body.night .panel {
   margin-top: 4px;
   font-size: 12px;
 }
+body.dark .footer {
+  opacity: 0.85;
+}
 
