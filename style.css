@@ -315,9 +315,10 @@ body {
   display: flex;
   align-items: flex-end;
   gap: 10px;
-  height: 80px;
+  min-height: 80px;   /* 👈 change */
   margin: 14px 0;
 }
+
 
 .bar {
   width: 16px;
@@ -458,6 +459,10 @@ body.dark .footer {
   margin: 20px auto;
   max-width: 420px;
   color: #fecaca;
+}
+
+.city-card {
+  overflow: visible;
 }
 
 
