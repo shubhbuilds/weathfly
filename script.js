@@ -281,18 +281,25 @@ async function loadWorldCities() {
     card.className = "city-card";
     card.onclick = () => loadWeather(d.name);
 
-    card.innerHTML = `
-      <div class="city-header">
-        <span>${d.name}, ${c.country}</span>
-        <span class="city-temp">${Math.round(d.main.temp)}°</span>
-      </div>
-      <div class="mini-bars">
-        <div class="bar temp" style="height:${d.main.temp * 2}px"></div>
-        <div class="bar hum" style="height:${d.main.humidity}px"></div>
-        <div class="bar pres" style="height:${(d.main.pressure - 980) / 2}px"></div>
-        <div class="bar wind" style="height:${d.wind.speed * 8}px"></div>
-      </div>
-    `;
+  card.innerHTML = `
+  <div class="city-header">
+    <span>${d.name}, ${c.country}</span>
+    <span class="city-temp">${Math.round(d.main.temp)}°</span>
+  </div>
+
+  <div class="mini-bars">
+    <div class="bar temp" style="height:${d.main.temp * 2}px"></div>
+    <div class="bar hum" style="height:${d.main.humidity}px"></div>
+    <div class="bar pres" style="height:${(d.main.pressure - 980) / 2}px"></div>
+    <div class="bar wind" style="height:${d.wind.speed * 8}px"></div>
+  </div>
+
+  <div class="city-meta">
+    <span>Humidity ${d.main.humidity}%</span>
+    <span>Wind ${d.wind.speed.toFixed(1)} m/s</span>
+  </div>
+`;
+
     grid.appendChild(card);
   }
 }
@@ -321,3 +328,4 @@ $("searchInput").addEventListener("keydown", e => {
 
 loadWeather("Delhi");
 loadWorldCities();
+
