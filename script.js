@@ -14,6 +14,27 @@ let sunsetTime = null;
 ================================ */
 const $ = id => document.getElementById(id);
 
+const loadingEl = $("loading");
+const errorEl = $("error");
+const errorMsg = $("errorMsg");
+
+function showLoading() {
+  loadingEl.classList.remove("hidden");
+  errorEl.classList.add("hidden");
+}
+
+function hideLoading() {
+  loadingEl.classList.add("hidden");
+}
+
+function showError(msg) {
+  errorMsg.textContent = msg;
+  errorEl.classList.remove("hidden");
+}
+
+/* ===============================
+   WORLD CITIES
+================================ */
 const WORLD_CITIES = [
   { name: "New York", country: "US" },
   { name: "London", country: "GB" },
@@ -64,41 +85,60 @@ function loadMap(lat, lon) {
 }
 
 /* ===============================
-   WEATHER
+   WEATHER (MAIN)
 ================================ */
 async function loadWeather(city) {
-  if (!city) return;
+  if (!city) {
+    showError("Please enter a city name");
+    return;
+  }
 
-  const res = await fetch(`${BASE}/weather?q=${city}&units=metric&appid=${API_KEY}`);
-  const d = await res.json();
-  if (d.cod !== 200) return alert("City not found");
+  try {
+    showLoading();
 
-  $("cityName").textContent = d.name;
-  $("temp").textContent = Math.round(d.main.temp);
-  $("maxTemp").textContent = Math.round(d.main.temp_max) + "°";
-  $("minTemp").textContent = Math.round(d.main.temp_min) + "°";
-  $("desc").textContent = d.weather[0].description;
-  $("humidity").textContent = d.main.humidity + "%";
-  $("wind").textContent = Math.round(d.wind.speed * 3.6) + " km/h";
-  $("pressure").textContent = d.main.pressure + " hPa";
-  $("feels").textContent = Math.round(d.main.feels_like) + "°";
-  $("visibility").textContent = (d.visibility / 1000).toFixed(1) + " km";
+    const res = await fetch(
+      `${BASE}/weather?q=${city}&units=metric&appid=${API_KEY}`
+    );
 
-  loadForecast(city);
-  loadAQI(d.coord.lat, d.coord.lon);
-  loadMap(d.coord.lat, d.coord.lon);
-  sunriseTime = d.sys.sunrise * 1000;
-sunsetTime = d.sys.sunset * 1000;
+    if (!res.ok) throw new Error("City not found");
 
-updateDayNight(Date.now());
+    const d = await res.json();
 
+    $("cityName").textContent = d.name;
+    $("temp").textContent = Math.round(d.main.temp);
+    $("maxTemp").textContent = Math.round(d.main.temp_max) + "°";
+    $("minTemp").textContent = Math.round(d.main.temp_min) + "°";
+    $("desc").textContent = d.weather[0].description;
+    $("humidity").textContent = d.main.humidity + "%";
+    $("wind").textContent = Math.round(d.wind.speed * 3.6) + " km/h";
+    $("pressure").textContent = d.main.pressure + " hPa";
+    $("feels").textContent = Math.round(d.main.feels_like) + "°";
+    $("visibility").textContent = (d.visibility / 1000).toFixed(1) + " km";
+
+    sunriseTime = d.sys.sunrise * 1000;
+    sunsetTime = d.sys.sunset * 1000;
+    updateDayNight(Date.now());
+
+    await Promise.all([
+      loadForecast(city),
+      loadAQI(d.coord.lat, d.coord.lon)
+    ]);
+
+    loadMap(d.coord.lat, d.coord.lon);
+    hideLoading();
+  } catch (err) {
+    hideLoading();
+    showError(err.message || "Failed to fetch weather");
+  }
 }
 
 /* ===============================
    FORECAST
 ================================ */
 async function loadForecast(city) {
-  const res = await fetch(`${BASE}/forecast?q=${city}&units=metric&appid=${API_KEY}`);
+  const res = await fetch(
+    `${BASE}/forecast?q=${city}&units=metric&appid=${API_KEY}`
+  );
   const d = await res.json();
 
   $("forecastRow").innerHTML = "";
@@ -122,7 +162,7 @@ async function loadForecast(city) {
 }
 
 /* ===============================
-   GRAPH (DUAL LINE + ACTIVE DOT)
+   GRAPH
 ================================ */
 function drawGraph(data) {
   if (!data || data.length < 2) return;
@@ -149,7 +189,6 @@ function drawGraph(data) {
   const sx = i => pad + (i / (temps.length - 1)) * (width - pad * 2);
   const sy = t => height - pad - ((t - min) / range) * (height - pad * 2);
 
-  /* grid */
   for (let i = 0; i <= 4; i++) {
     const y = pad + (i / 4) * (height - pad * 2);
     const val = Math.round(min + (range / 4) * (4 - i));
@@ -160,35 +199,13 @@ function drawGraph(data) {
     txt.textContent = val + "°";
     txt.setAttribute("class", "y-label");
     yLabels.appendChild(txt);
-
-    const ln = document.createElementNS("http://www.w3.org/2000/svg", "line");
-    ln.setAttribute("x1", pad);
-    ln.setAttribute("x2", width - pad);
-    ln.setAttribute("y1", y);
-    ln.setAttribute("y2", y);
-    ln.setAttribute("class", "grid-line");
-    grid.appendChild(ln);
   }
 
-  /* main temp line */
   path.setAttribute(
     "d",
     "M " + temps.map((t, i) => `${sx(i)},${sy(t)}`).join(" L ")
   );
 
-  /* feels-like line */
-  const feelsPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-  feelsPath.setAttribute(
-    "d",
-    "M " + feels.map((t, i) => `${sx(i)},${sy(t)}`).join(" L ")
-  );
-  feelsPath.setAttribute("stroke", "#67e8f9");
-  feelsPath.setAttribute("stroke-dasharray", "6 6");
-  feelsPath.setAttribute("fill", "none");
-  feelsPath.setAttribute("stroke-width", "2");
-  grid.appendChild(feelsPath);
-
-  /* dots */
   temps.forEach((t, i) => {
     const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     dot.setAttribute("cx", sx(i));
@@ -200,7 +217,7 @@ function drawGraph(data) {
 }
 
 /* ===============================
-   TIMELINE (SCRUB + ANIMATE)
+   TIMELINE
 ================================ */
 function setupTimeline() {
   const slider = $("timeSlider");
@@ -218,16 +235,13 @@ function updateTimelineUI(index) {
   if (!point) return;
 
   activeDotIndex = index;
-
   $("sliderTime").textContent = point.time;
   $("sliderTemp").textContent = `${point.temp}°`;
 
   $("temp").textContent = point.temp;
   $("feels").textContent = point.feels + "°";
 
-  // ⬇️ NEW: approximate timeline time
-  const now = Date.now();
-  const simulatedTime = now + index * 3 * 60 * 60 * 1000;
+  const simulatedTime = Date.now() + index * 3 * 60 * 60 * 1000;
   updateDayNight(simulatedTime);
 
   drawGraph(timelineData);
@@ -237,7 +251,9 @@ function updateTimelineUI(index) {
    AIR QUALITY
 ================================ */
 async function loadAQI(lat, lon) {
-  const res = await fetch(`${BASE}/air_pollution?lat=${lat}&lon=${lon}&appid=${API_KEY}`);
+  const res = await fetch(
+    `${BASE}/air_pollution?lat=${lat}&lon=${lon}&appid=${API_KEY}`
+  );
   const d = await res.json();
 
   const pm25 = d.list[0].components.pm2_5;
@@ -246,15 +262,6 @@ async function loadAQI(lat, lon) {
   $("pm25").textContent = pm25.toFixed(1);
   $("aqiScore").textContent = aqi.value;
   $("aqiLabel").textContent = aqi.label;
-
-  $("aqiScore").className = "aqi-badge " + ({
-    "Good": "aqi-good",
-    "Moderate": "aqi-moderate",
-    "Unhealthy for Sensitive Groups": "aqi-usg",
-    "Unhealthy": "aqi-unhealthy",
-    "Very Unhealthy": "aqi-very",
-    "Hazardous": "aqi-hazard"
-  }[aqi.label] || "");
 }
 
 /* ===============================
@@ -265,7 +272,9 @@ async function loadWorldCities() {
   grid.innerHTML = "";
 
   for (const c of WORLD_CITIES) {
-    const res = await fetch(`${BASE}/weather?q=${c.name},${c.country}&units=metric&appid=${API_KEY}`);
+    const res = await fetch(
+      `${BASE}/weather?q=${c.name},${c.country}&units=metric&appid=${API_KEY}`
+    );
     const d = await res.json();
 
     const card = document.createElement("div");
@@ -283,20 +292,17 @@ async function loadWorldCities() {
         <div class="bar pres" style="height:${(d.main.pressure - 980) / 2}px"></div>
         <div class="bar wind" style="height:${d.wind.speed * 8}px"></div>
       </div>
-      <div class="city-meta">
-        <span>Humidity ${d.main.humidity}%</span>
-        <span>Wind ${d.wind.speed.toFixed(1)} m/s</span>
-      </div>
     `;
-
     grid.appendChild(card);
   }
 }
+
+/* ===============================
+   DAY / NIGHT
+================================ */
 function updateDayNight(currentTime) {
   if (!sunriseTime || !sunsetTime) return;
-
   const isDay = currentTime >= sunriseTime && currentTime < sunsetTime;
-
   document.body.classList.toggle("day", isDay);
   document.body.classList.toggle("night", !isDay);
 }
@@ -304,7 +310,9 @@ function updateDayNight(currentTime) {
 /* ===============================
    INIT
 ================================ */
-$("searchBtn").onclick = () => loadWeather($("searchInput").value.trim());
+$("searchBtn").onclick = () =>
+  loadWeather($("searchInput").value.trim());
+
 $("searchInput").addEventListener("keydown", e => {
   if (e.key === "Enter") {
     loadWeather(e.target.value.trim());
