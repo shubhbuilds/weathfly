@@ -464,6 +464,20 @@ body.dark .footer {
 .city-card {
   overflow: visible;
 }
+.unit-toggle button {
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: none;
+  background: rgba(255,255,255,0.08);
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.unit-toggle button:hover {
+  background: rgba(255,255,255,0.15);
+}
+
 
 
 
