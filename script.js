@@ -179,10 +179,12 @@ function drawGraph(data) {
 
   const path = $("graphPath");
   const dots = $("graphDots");
+  const grid = $("grid"); // ✅ MISSING LINE (THIS WAS THE BUG)
+
   dots.innerHTML = "";
 
   const temps = data.map(d => d.temp);
-   const feels = data.map(d => d.feels);
+  const feels = data.map(d => d.feels);
 
   const max = Math.max(...temps);
   const min = Math.min(...temps);
@@ -193,28 +195,35 @@ function drawGraph(data) {
   const sx = i => 50 + (i / (temps.length - 1)) * 600;
   const sy = t => 250 - ((t - min) / (max - min || 1)) * 200;
 
+  /* MAIN TEMP LINE */
   path.setAttribute(
     "d",
     "M " + temps.map((t, i) => `${sx(i)},${sy(t)}`).join(" L ")
   );
-// feels-like dotted line
-const feelsPath = document.createElementNS(
-  "http://www.w3.org/2000/svg",
-  "path"
-);
 
-feelsPath.setAttribute(
-  "d",
-  "M " + feels.map((t, i) => `${sx(i)},${sy(t)}`).join(" L ")
-);
+  /* FEELS-LIKE DOTTED LINE (REUSED, NOT STACKED) */
+  let feelsPath = $("feelsPath");
 
-feelsPath.setAttribute("fill", "none");
-feelsPath.setAttribute("stroke", "#67e8f9");
-feelsPath.setAttribute("stroke-width", "2");
-feelsPath.setAttribute("stroke-dasharray", "6 6");
+  if (!feelsPath) {
+    feelsPath = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "path"
+    );
+    feelsPath.setAttribute("id", "feelsPath");
+    grid.appendChild(feelsPath);
+  }
 
-grid.appendChild(feelsPath);
+  feelsPath.setAttribute(
+    "d",
+    "M " + feels.map((t, i) => `${sx(i)},${sy(t)}`).join(" L ")
+  );
 
+  feelsPath.setAttribute("fill", "none");
+  feelsPath.setAttribute("stroke", "#67e8f9");
+  feelsPath.setAttribute("stroke-width", "2");
+  feelsPath.setAttribute("stroke-dasharray", "6 6");
+
+  /* DOTS */
   temps.forEach((t, i) => {
     const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     dot.setAttribute("cx", sx(i));
@@ -224,6 +233,7 @@ grid.appendChild(feelsPath);
     dots.appendChild(dot);
   });
 }
+
 
 /* ===============================
    TIMELINE
@@ -357,5 +367,6 @@ $("unitBtn").onclick = () => {
 
 loadWeather("Delhi");
 loadWorldCities();
+
 
 
