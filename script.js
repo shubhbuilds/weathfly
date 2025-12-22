@@ -19,15 +19,18 @@ const errorEl = $("error");
 const errorMsg = $("errorMsg");
 
 function showLoading() {
+  if (!loadingEl) return;
   loadingEl.classList.remove("hidden");
-  errorEl.classList.add("hidden");
+  if (errorEl) errorEl.classList.add("hidden");
 }
 
 function hideLoading() {
+  if (!loadingEl) return;
   loadingEl.classList.add("hidden");
 }
 
 function showError(msg) {
+  if (!errorEl || !errorMsg) return;
   errorMsg.textContent = msg;
   errorEl.classList.remove("hidden");
 }
@@ -45,7 +48,7 @@ const WORLD_CITIES = [
 ];
 
 /* ===============================
-   AQI (PM2.5)
+   AQI
 ================================ */
 function calculateAQI_PM25(pm) {
   const bp = [
@@ -59,13 +62,13 @@ function calculateAQI_PM25(pm) {
 
   for (const [cL, cH, iL, iH, label] of bp) {
     if (pm >= cL && pm <= cH) {
-      const value = Math.round(
-        ((iH - iL) / (cH - cL)) * (pm - cL) + iL
-      );
-      return { value, label };
+      return {
+        value: Math.round(((iH - iL) / (cH - cL)) * (pm - cL) + iL),
+        label
+      };
     }
   }
-  return { value: "—", label: "Unknown" };
+  return { value: "--", label: "Unknown" };
 }
 
 /* ===============================
@@ -85,7 +88,7 @@ function loadMap(lat, lon) {
 }
 
 /* ===============================
-   WEATHER (MAIN)
+   WEATHER
 ================================ */
 async function loadWeather(city) {
   if (!city) {
@@ -99,7 +102,6 @@ async function loadWeather(city) {
     const res = await fetch(
       `${BASE}/weather?q=${city}&units=metric&appid=${API_KEY}`
     );
-
     if (!res.ok) throw new Error("City not found");
 
     const d = await res.json();
@@ -119,12 +121,10 @@ async function loadWeather(city) {
     sunsetTime = d.sys.sunset * 1000;
     updateDayNight(Date.now());
 
-    await Promise.all([
-      loadForecast(city),
-      loadAQI(d.coord.lat, d.coord.lon)
-    ]);
-
+    loadForecast(city);
+    loadAQI(d.coord.lat, d.coord.lon);
     loadMap(d.coord.lat, d.coord.lon);
+
     hideLoading();
   } catch (err) {
     hideLoading();
@@ -165,41 +165,21 @@ async function loadForecast(city) {
    GRAPH
 ================================ */
 function drawGraph(data) {
-  if (!data || data.length < 2) return;
-
-  const width = 700, height = 300, pad = 50;
+  if (!data.length) return;
 
   const path = $("graphPath");
   const dots = $("graphDots");
-  const grid = $("grid");
-  const yLabels = $("yLabels");
-
-  dots.innerHTML = grid.innerHTML = yLabels.innerHTML = "";
+  dots.innerHTML = "";
 
   const temps = data.map(d => d.temp);
-  const feels = data.map(d => d.feels);
-
-  const max = Math.max(...temps, ...feels);
-  const min = Math.min(...temps, ...feels);
-  const range = Math.max(1, max - min);
+  const max = Math.max(...temps);
+  const min = Math.min(...temps);
 
   $("minGraph").textContent = `Min: ${min}°`;
   $("maxGraph").textContent = `Max: ${max}°`;
 
-  const sx = i => pad + (i / (temps.length - 1)) * (width - pad * 2);
-  const sy = t => height - pad - ((t - min) / range) * (height - pad * 2);
-
-  for (let i = 0; i <= 4; i++) {
-    const y = pad + (i / 4) * (height - pad * 2);
-    const val = Math.round(min + (range / 4) * (4 - i));
-
-    const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    txt.setAttribute("x", 10);
-    txt.setAttribute("y", y + 4);
-    txt.textContent = val + "°";
-    txt.setAttribute("class", "y-label");
-    yLabels.appendChild(txt);
-  }
+  const sx = i => 50 + (i / (temps.length - 1)) * 600;
+  const sy = t => 250 - ((t - min) / (max - min || 1)) * 200;
 
   path.setAttribute(
     "d",
@@ -210,7 +190,7 @@ function drawGraph(data) {
     const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     dot.setAttribute("cx", sx(i));
     dot.setAttribute("cy", sy(t));
-    dot.setAttribute("r", i === activeDotIndex ? 7 : 4);
+    dot.setAttribute("r", 5);
     dot.setAttribute("class", "graph-dot");
     dots.appendChild(dot);
   });
@@ -221,29 +201,21 @@ function drawGraph(data) {
 ================================ */
 function setupTimeline() {
   const slider = $("timeSlider");
-  if (!slider || timelineData.length === 0) return;
-
   slider.max = timelineData.length - 1;
   slider.value = 0;
-  updateTimelineUI(0);
-
   slider.oninput = e => updateTimelineUI(+e.target.value);
 }
 
-function updateTimelineUI(index) {
-  const point = timelineData[index];
-  if (!point) return;
+function updateTimelineUI(i) {
+  const p = timelineData[i];
+  if (!p) return;
 
-  activeDotIndex = index;
-  $("sliderTime").textContent = point.time;
-  $("sliderTemp").textContent = `${point.temp}°`;
+  $("sliderTime").textContent = p.time;
+  $("sliderTemp").textContent = `${p.temp}°`;
+  $("temp").textContent = p.temp;
+  $("feels").textContent = p.feels + "°";
 
-  $("temp").textContent = point.temp;
-  $("feels").textContent = point.feels + "°";
-
-  const simulatedTime = Date.now() + index * 3 * 60 * 60 * 1000;
-  updateDayNight(simulatedTime);
-
+  updateDayNight(Date.now() + i * 3 * 3600000);
   drawGraph(timelineData);
 }
 
@@ -281,24 +253,24 @@ async function loadWorldCities() {
     card.className = "city-card";
     card.onclick = () => loadWeather(d.name);
 
-  card.innerHTML = `
-  <div class="city-header">
-    <span>${d.name}, ${c.country}</span>
-    <span class="city-temp">${Math.round(d.main.temp)}°</span>
-  </div>
+    card.innerHTML = `
+      <div class="city-header">
+        <span>${d.name}, ${c.country}</span>
+        <span class="city-temp">${Math.round(d.main.temp)}°</span>
+      </div>
 
-  <div class="mini-bars">
-    <div class="bar temp" style="height:${d.main.temp * 2}px"></div>
-    <div class="bar hum" style="height:${d.main.humidity}px"></div>
-    <div class="bar pres" style="height:${(d.main.pressure - 980) / 2}px"></div>
-    <div class="bar wind" style="height:${d.wind.speed * 8}px"></div>
-  </div>
+      <div class="mini-bars">
+        <div class="bar temp" style="height:${d.main.temp * 2}px"></div>
+        <div class="bar hum" style="height:${d.main.humidity}px"></div>
+        <div class="bar pres" style="height:${(d.main.pressure - 980) / 2}px"></div>
+        <div class="bar wind" style="height:${d.wind.speed * 8}px"></div>
+      </div>
 
-  <div class="city-meta">
-    <span>Humidity ${d.main.humidity}%</span>
-    <span>Wind ${d.wind.speed.toFixed(1)} m/s</span>
-  </div>
-`;
+      <div class="city-meta">
+        <span>Humidity ${d.main.humidity}%</span>
+        <span>Wind ${d.wind.speed.toFixed(1)} m/s</span>
+      </div>
+    `;
 
     grid.appendChild(card);
   }
@@ -307,11 +279,10 @@ async function loadWorldCities() {
 /* ===============================
    DAY / NIGHT
 ================================ */
-function updateDayNight(currentTime) {
+function updateDayNight(t) {
   if (!sunriseTime || !sunsetTime) return;
-  const isDay = currentTime >= sunriseTime && currentTime < sunsetTime;
-  document.body.classList.toggle("day", isDay);
-  document.body.classList.toggle("night", !isDay);
+  document.body.classList.toggle("day", t >= sunriseTime && t < sunsetTime);
+  document.body.classList.toggle("night", !(t >= sunriseTime && t < sunsetTime));
 }
 
 /* ===============================
@@ -321,11 +292,8 @@ $("searchBtn").onclick = () =>
   loadWeather($("searchInput").value.trim());
 
 $("searchInput").addEventListener("keydown", e => {
-  if (e.key === "Enter") {
-    loadWeather(e.target.value.trim());
-  }
+  if (e.key === "Enter") loadWeather(e.target.value.trim());
 });
 
 loadWeather("Delhi");
 loadWorldCities();
-
