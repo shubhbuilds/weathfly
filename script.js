@@ -4,6 +4,7 @@
 const API_KEY = "4b20f1aab98f9ec99f22b2ae19e34f39";
 const BASE = "https://api.openweathermap.org/data/2.5";
 
+let currentUnit = "C"; // "C" or "F"
 let timelineData = [];
 let activeDotIndex = 0;
 let sunriseTime = null;
@@ -34,6 +35,8 @@ function showError(msg) {
   errorMsg.textContent = msg;
   errorEl.classList.remove("hidden");
 }
+const toF = c => Math.round((c * 9) / 5 + 32);
+const toC = f => Math.round(((f - 32) * 5) / 9);
 
 /* ===============================
    WORLD CITIES
@@ -149,7 +152,14 @@ async function loadForecast(city) {
     const feels = Math.round(item.main.feels_like);
     const time = item.dt_txt.slice(11, 16);
 
-    timelineData.push({ temp, feels, time });
+    timelineData.push({
+  temp,
+  feels,
+  time,
+  tempC: temp,
+  feelsC: feels
+});
+
 
     const card = document.createElement("div");
     card.className = "forecast-item";
@@ -303,6 +313,32 @@ function updateDayNight(t) {
   document.body.classList.toggle("day", t >= sunriseTime && t < sunsetTime);
   document.body.classList.toggle("night", !(t >= sunriseTime && t < sunsetTime));
 }
+function applyUnit() {
+  const isF = currentUnit === "F";
+
+  // main values
+  const t = +$("temp").textContent;
+  const f = +$("feels").textContent.replace("°", "");
+
+  $("temp").textContent = isF ? toF(t) : toC(t);
+  $("feels").textContent = (isF ? toF(f) : toC(f)) + "°";
+
+  // max / min
+  ["maxTemp", "minTemp"].forEach(id => {
+    const v = +$(id).textContent.replace("°", "");
+    $(id).textContent = (isF ? toF(v) : toC(v)) + "°";
+  });
+
+  // forecast + graph
+  timelineData = timelineData.map(p => ({
+    ...p,
+    temp: isF ? toF(p.tempC) : p.tempC,
+    feels: isF ? toF(p.feelsC) : p.feelsC
+  }));
+
+  drawGraph(timelineData);
+  setupTimeline();
+}
 
 /* ===============================
    INIT
@@ -313,7 +349,13 @@ $("searchBtn").onclick = () =>
 $("searchInput").addEventListener("keydown", e => {
   if (e.key === "Enter") loadWeather(e.target.value.trim());
 });
+$("unitBtn").onclick = () => {
+  currentUnit = currentUnit === "C" ? "F" : "C";
+  $("unitBtn").textContent = currentUnit === "C" ? "°F" : "°C";
+  applyUnit();
+};
 
 loadWeather("Delhi");
 loadWorldCities();
+
 
