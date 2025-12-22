@@ -172,6 +172,8 @@ function drawGraph(data) {
   dots.innerHTML = "";
 
   const temps = data.map(d => d.temp);
+   const feels = data.map(d => d.feels);
+
   const max = Math.max(...temps);
   const min = Math.min(...temps);
 
@@ -185,6 +187,23 @@ function drawGraph(data) {
     "d",
     "M " + temps.map((t, i) => `${sx(i)},${sy(t)}`).join(" L ")
   );
+// feels-like dotted line
+const feelsPath = document.createElementNS(
+  "http://www.w3.org/2000/svg",
+  "path"
+);
+
+feelsPath.setAttribute(
+  "d",
+  "M " + feels.map((t, i) => `${sx(i)},${sy(t)}`).join(" L ")
+);
+
+feelsPath.setAttribute("fill", "none");
+feelsPath.setAttribute("stroke", "#67e8f9");
+feelsPath.setAttribute("stroke-width", "2");
+feelsPath.setAttribute("stroke-dasharray", "6 6");
+
+grid.appendChild(feelsPath);
 
   temps.forEach((t, i) => {
     const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
@@ -297,3 +316,4 @@ $("searchInput").addEventListener("keydown", e => {
 
 loadWeather("Delhi");
 loadWorldCities();
+
