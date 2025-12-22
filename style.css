@@ -418,5 +418,47 @@ body.night .panel {
 body.dark .footer {
   opacity: 0.85;
 }
+/* ================= LOADING ================= */
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px;
+  opacity: 0.85;
+}
+
+.spinner {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid rgba(255,255,255,0.2);
+  border-top-color: #38bdf8;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.hidden {
+  display: none;
+}
+
+/* ================= ERROR ================= */
+
+.error {
+  background: rgba(239,68,68,0.15);
+  border: 1px solid rgba(239,68,68,0.4);
+  padding: 16px;
+  border-radius: 14px;
+  text-align: center;
+  margin: 20px auto;
+  max-width: 420px;
+  color: #fecaca;
+}
+
 
 
